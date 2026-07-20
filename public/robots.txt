@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://r055a.github.io/ai-quatro-3d/sitemap.xml

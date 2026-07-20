@@ -1,0 +1,32 @@
+{
+  "name": "ai-quarto-three.js",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "quality": "biome check .",
+    "quality:fix": "biome check --write .",
+    "verify": "npm run quality && npm test && npm run build"
+  },
+  "dependencies": {
+    "clean": "^4.0.2",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@types/three": "^0.185.1",
+    "sass": "^1.101.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.5"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true
+  }
+}
