@@ -1,5 +1,5 @@
 import { getRandVal, selectStartCell, selectStartPiece } from "../ai/search";
-import { describePiece, GAME_PIECES, pieceStr, TRAIT_MASK } from "../game/pieces";
+import { GAME_PIECES, pieceStr, TRAIT_MASK } from "../game/pieces";
 import { CELL_COUNT, getTraitMask, getWinLine, isBoardEmpty, isBoardFull } from "../game/rules";
 import type {
   Cell,
@@ -14,6 +14,7 @@ import type {
   Turn,
   WinLine,
 } from "../game/types";
+import { diffLabel, onLangChange, translate, translateTraits } from "../i18n";
 import type { GameScene } from "../render/GameScene";
 
 interface Elements {
@@ -54,6 +55,10 @@ export class GameController {
     private readonly elements: Elements,
   ) {
     this.worker.addEventListener("message", this.onWorkerMsg);
+    onLangChange((): void => {
+      this.updateStartOptions();
+      this.updateUI();
+    });
     this.elements.newGame.addEventListener("click", this.newGame);
     this.elements.starter.addEventListener("change", this.newGame);
     this.elements.gameMode.addEventListener("change", (): void => {
@@ -111,7 +116,7 @@ export class GameController {
       this.renderPendingPiece();
       return;
     }
-    this.elements.pieceName.textContent = describePiece(piece);
+    this.elements.pieceName.textContent = translateTraits(piece);
     this.elements.pieceStr.textContent = pieceStr(piece);
   }
 
@@ -314,26 +319,26 @@ export class GameController {
 
     if (this.phase === "finished") {
       if (this.winner === "draw") {
-        this.elements.turnBadge.textContent = "Draw";
-        this.elements.status.textContent = "The game is a draw.";
-        this.elements.detail.textContent = "No moves remain to make a winning line.";
+        this.elements.turnBadge.textContent = translate("status.badgeDraw");
+        this.elements.status.textContent = translate("status.statusDraw");
+        this.elements.detail.textContent = translate("status.detailDraw");
       } else if (this.winner !== null) {
         const winnerName: string = this.turnLabel(this.winner);
-        const gameMode: string = this.gameMode();
+        const gameMode: GameMode = this.gameMode();
         const isWonUser: boolean = gameMode === "human-ai" && this.winner === "player1";
         const isWonAI: boolean = gameMode === "human-ai" && this.winner === "player2";
 
         this.elements.turnBadge.textContent = isWonUser
-          ? "Victory"
+          ? translate("status.badgeVictory")
           : isWonAI
-            ? "AI victory"
-            : `${winnerName} victory`;
+            ? translate("status.badgeVictoryAI")
+            : translate("status.badgeVictoryPlayer", { player: winnerName });
         this.elements.status.textContent = isWonUser
-          ? "You win."
+          ? translate("status.statusWinYou")
           : isWonAI
-            ? "The AI player wins."
-            : `${winnerName} wins.`;
-        this.elements.detail.textContent = "The winning piece sequence is highlighted.";
+            ? translate("status.statusWinAI")
+            : translate("status.statusWinPlayer", { player: winnerName });
+        this.elements.detail.textContent = translate("status.detailWin");
       }
       this.renderPendingPiece();
       return;
@@ -341,48 +346,51 @@ export class GameController {
 
     const actor: string = this.turnLabel(this.activeTurn);
     const opponent: string = this.turnLabel(this.toggleTurn(this.activeTurn));
+    const isUserTurn: boolean = this.gameMode() === "human-ai" && this.activeTurn === "player1";
 
     if (this.phase === "thinking") {
-      this.elements.turnBadge.textContent = `${actor}'s turn`;
+      this.elements.turnBadge.textContent = translate("status.badgeTurnAI", { player: actor });
       this.elements.status.textContent =
-        this.pendingPiece === null ? `${actor} is choosing the opening piece.` : `${actor} play...`;
+        this.pendingPiece === null
+          ? translate("status.statusTurnOpponentStart", { player: actor })
+          : translate("status.statusTurnOpponent", { player: actor });
       this.elements.detail.textContent =
         this.pendingPiece === null
-          ? `The selected piece will be passed to ${opponent}.`
-          : `${actor} is placing a piece and then selecting a new piece for ${opponent}.`;
+          ? translate("status.detailTurnStartAI", { opponent })
+          : translate("status.detailTurnAI", { player: actor, opponent });
       this.renderPendingPiece();
       return;
     }
 
     if (this.phase === "place") {
-      this.elements.turnBadge.textContent =
-        actor === "You" ? "Your turn: place a piece" : `${actor}'s turn: place a piece`;
-      this.elements.status.textContent =
-        actor === "You"
-          ? `Place the piece ${opponent} has selected.`
-          : `${actor}: place the received piece.`;
-      this.elements.detail.textContent = "Click any highlighted board circle.";
+      this.elements.turnBadge.textContent = isUserTurn
+        ? translate("status.badgeTurnPlaceYou")
+        : translate("status.badgeTurnPlacePlayer", { player: actor });
+      this.elements.status.textContent = isUserTurn
+        ? translate("status.statusTurnPlayerPlaceVsAI", { opponent })
+        : translate("status.statusTurnPlayerPlace", { player: actor });
+      this.elements.detail.textContent = translate("status.detailTurnPlace");
       this.renderPendingPiece();
       return;
     }
 
-    this.elements.turnBadge.textContent =
-      actor === "You" ? "Your turn: select a piece" : `${actor}'s turn: select a piece`;
-    this.elements.status.textContent =
-      actor === "You"
-        ? `Select a piece for ${opponent} to place.`
-        : `${actor}: select a piece for ${opponent} to place.`;
-    this.elements.detail.textContent = "Select any available red or black piece.";
+    this.elements.turnBadge.textContent = isUserTurn
+      ? translate("status.badgeTurnSelectYou")
+      : translate("status.badgeTurnSelectPlayer", { player: actor });
+    this.elements.status.textContent = isUserTurn
+      ? translate("status.statusTurnPlayerSelect", { opponent })
+      : translate("status.statusTurnPlayerSelectVsAI", { player: actor, opponent });
+    this.elements.detail.textContent = translate("status.detailTurnSelect");
     this.renderPendingPiece();
   }
 
   private renderPendingPiece(): void {
     if (this.pendingPiece === null) {
-      this.elements.pieceName.textContent = "None selected";
+      this.elements.pieceName.textContent = translate("piece.none");
       this.elements.pieceStr.textContent = "----";
       return;
     }
-    this.elements.pieceName.textContent = describePiece(this.pendingPiece);
+    this.elements.pieceName.textContent = translateTraits(this.pendingPiece);
     this.elements.pieceStr.textContent = pieceStr(this.pendingPiece);
   }
 
@@ -467,11 +475,18 @@ export class GameController {
 
   private turnLabel(turn: Turn): string {
     const mode: GameMode = this.gameMode();
-    if (mode === "human-human") return turn === "player1" ? "Player 1" : "Player 2";
-    if (mode === "human-ai") {
-      return turn === "player1" ? "You" : `AI (${this.turnDiff(turn)})`;
+    if (mode === "human-human") {
+      return translate(turn === "player1" ? "player.playerOne" : "player.playerTwo");
     }
-    return `AI-P${turn === "player1" ? "1" : "2"} (${this.turnDiff(turn)})`;
+    if (mode === "human-ai") {
+      return turn === "player1"
+        ? translate("player.playerYou")
+        : translate("player.playerAI", { difficulty: diffLabel(this.turnDiff(turn)) });
+    }
+    return translate("player.playerDiffAI", {
+      number: turn === "player1" ? "1" : "2",
+      difficulty: diffLabel(this.turnDiff(turn)),
+    });
   }
 
   private getRandomStarter(starter: Starter): Turn {

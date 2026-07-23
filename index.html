@@ -1,164 +1,181 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Play user vs user, user vs AI, and AI vs AI modes, with easy, medium and hard AI difficulties."
-    />
-    <meta name="theme-color" content="#11151d" />
-    <meta name="robots" content="index, follow" />
-    <link
-            rel="canonical"
-            href="https://r055a.github.io/ai-quatro-3d/"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="AI-Quarto 3D" />
-    <meta
-            property="og:description"
-            content="Play user vs user, user vs AI, and AI vs AI modes, with easy, medium and hard AI difficulties."
-    />
-    <meta
-            property="og:url"
-            content="https://r055a.github.io/ai-quatro-3d/"
-    />
-    <meta
-            property="og:image"
-            content="https://r055a.github.io/ai-quatro-3d/social-preview.png"
-    />
-    <meta name="google-site-verification" content="CUwzk7c9yoUcwcmT0BcD61_cK7RsUNN6PVvJQudFfZs" />
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "AI-Quarto 3D",
-        "url": "https://r055a.github.io/ai-quarto-3d/"
-      }
-    </script>
-    <title>AI-Quarto 3D</title>
-  </head>
-  <body>
-    <div id="app">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">A ported enhancement of Uni-Git-Projects/UU-Game (game engine)</p>
-          <h1>AI-Quarto 3D</h1>
-        </div>
-
-        <div class="controls">
-          <label id="diff-wrap">
-            <span>AI diff</span>
-            <select id="diff">
-              <option value="easy">Easy</option>
-              <option value="medium" selected>Medium</option>
-              <option value="hard">Hard</option>
-            </select>
-          </label>
-          <label id="diff-p-one-wrap" hidden>
-            <span>AI-P1 difficulty</span>
-            <select id="diff-p-one">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard" selected>Hard</option>
-            </select>
-          </label>
-          <label id="diff-p-two-wrap" hidden>
-            <span>AI-P2 difficulty</span>
-            <select id="diff-p-two">
-              <option value="easy">Easy</option>
-              <option value="medium">Medium</option>
-              <option value="hard" selected>Hard</option>
-            </select>
-          </label>
-          <label>
-            <span>Starting player</span>
-            <select id="starter">
-              <option value="random" selected>Random</option>
-              <option value="p-one">Player 1</option>
-              <option value="p-two">Player 2</option>
-            </select>
-          </label>
-          <label>
-            <span>Mode</span>
-            <select id="game-mode">
-              <option value="human-human">User vs user</option>
-              <option value="human-ai" selected>User vs AI</option>
-              <option value="ai-ai">AI vs AI</option>
-            </select>
-          </label>
-          <button id="new-game" class="primary" type="button">New game</button>
-        </div>
-      </header>
-
-      <main class="game-card">
-        <section class="scene-wrap">
-          <canvas id="game-canvas"></canvas>
-          <div id="thinking" class="thinking" hidden>
-            <span></span><span></span><span></span>
-            <strong>AI is playing</strong>
-          </div>
-        </section>
-
-        <aside class="side-panel" aria-live="polite">
-          <div>
-            <p id="turn-badge" class="turn-badge"></p>
-            <h2 id="status">Gameplay status</h2>
-            <p id="detail" class="detail"></p>
-          </div>
-
-          <div class="received-card">
-            <span>Piece in play</span>
-            <strong id="piece-name">None Selected</strong>
-            <code id="piece-str">----</code>
-          </div>
-
-          <div class="legend">
-            <h3>Piece traits</h3>
-            <div><code>1</code><span>Black</span><span>Big</span><span>Round</span><span>Solid</span></div>
-            <div><code>0</code><span>Red</span><span>Small</span><span>Square</span><span>Hollow</span></div>
-          </div>
-
-          <div class="bin-board-card">
-            <div class="bin-board-heading">
-              <h3>Binary board</h3>
-              <span>Placed pieces</span>
-            </div>
-            <div class="bin-board-wrap">
-              <div id="bin-board" class="bin-board">
-                <code data-binary-cell="0"></code>
-                <code data-binary-cell="1"></code>
-                <code data-binary-cell="2"></code>
-                <code data-binary-cell="3"></code>
-                <code data-binary-cell="4"></code>
-                <code data-binary-cell="5"></code>
-                <code data-binary-cell="6"></code>
-                <code data-binary-cell="7"></code>
-                <code data-binary-cell="8"></code>
-                <code data-binary-cell="9"></code>
-                <code data-binary-cell="10"></code>
-                <code data-binary-cell="11"></code>
-                <code data-binary-cell="12"></code>
-                <code data-binary-cell="13"></code>
-                <code data-binary-cell="14"></code>
-                <code data-binary-cell="15"></code>
-              </div>
-              <svg
-                id="bin-win-overlay"
-                class="bin-win-overlay"
-                viewBox="0 0 4 4"
-                aria-hidden="true"
-                hidden
-              >
-              </svg>
-            </div>
-          </div>
-
-        </aside>
-      </main>
-
-      <footer></footer>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+          name="description"
+          content="Interactive 3D Quarto board game. Play user vs user, user vs AI, and AI vs AI, with easy, medium and hard AI difficulties."
+  />
+  <meta name="theme-color" content="#11151d" />
+  <meta name="robots" content="index, follow" />
+  <link
+          rel="canonical"
+          href="https://r055a.github.io/ai-quatro-3d/"
+  />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="AI-Quarto 3D" />
+  <meta
+          property="og:description"
+          content="Interactive 3D Quarto board game. Play user vs user, user vs AI, and AI vs AI, with easy, medium and hard AI difficulties."
+  />
+  <meta
+          property="og:url"
+          content="https://r055a.github.io/ai-quatro-3d/"
+  />
+  <meta
+          property="og:image"
+          content="https://r055a.github.io/ai-quatro-3d/social-preview.png"
+  />
+  <meta name="google-site-verification" content="CUwzk7c9yoUcwcmT0BcD61_cK7RsUNN6PVvJQudFfZs" />
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AI-Quarto 3D",
+      "url": "https://r055a.github.io/ai-quarto-3d/"
+    }
+  </script>
+  <title data-i18n="app.title">AI-Quarto 3D</title>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow" data-i18n="app.eyebrow">A ported enhancement of Uni-Git-Projects/UU-Game (game engine)</p>
+      <h1 data-i18n="app.title">AI-Quarto 3D</h1>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+    <div class="controls">
+      <label id="diff-wrap">
+        <span data-i18n="controls.diffAI">AI difficulty</span>
+        <select id="diff">
+          <option value="easy" data-i18n="diff.easy">Easy</option>
+          <option value="medium" selected data-i18n="diff.medium">Medium</option>
+          <option value="hard" data-i18n="diff.hard">Hard</option>
+        </select>
+      </label>
+      <label id="diff-p-one-wrap" hidden>
+        <span data-i18n="controls.diffPlayerOneAI">AI-P1 difficulty</span>
+        <select id="diff-p-one">
+          <option value="easy" data-i18n="diff.easy">Easy</option>
+          <option value="medium" data-i18n="diff.medium">Medium</option>
+          <option value="hard" selected data-i18n="diff.hard">Hard</option>
+        </select>
+      </label>
+      <label id="diff-p-two-wrap" hidden>
+        <span data-i18n="controls.diffPlayerTwoAI">AI-P2 difficulty</span>
+        <select id="diff-p-two">
+          <option value="easy" data-i18n="diff.easy">Easy</option>
+          <option value="medium" data-i18n="diff.medium">Medium</option>
+          <option value="hard" selected data-i18n="diff.hard">Hard</option>
+        </select>
+      </label>
+      <label>
+        <span data-i18n="controls.startingPlayer">Starting player</span>
+        <select id="starter">
+          <option value="random" selected data-i18n="player.playerRandom">Random</option>
+          <option value="p-one" data-i18n="player.playerOne">Player 1</option>
+          <option value="p-two" data-i18n="player.playerTwo">Player 2</option>
+        </select>
+      </label>
+      <label>
+        <span data-i18n="controls.gameMode">Mode</span>
+        <select id="game-mode">
+          <option value="human-human" data-i18n="mode.userVsUser">User vs user</option>
+          <option value="human-ai" selected data-i18n="mode.userVsAI">User vs AI</option>
+          <option value="ai-ai" data-i18n="mode.onlyAI">AI vs AI</option>
+        </select>
+      </label>
+      <button id="new-game" class="primary" type="button" data-i18n="app.newGame">New game</button>
+      <label class="control-lang">
+        <svg
+                class="control-lang-icon"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M3 12h18"></path>
+          <path d="M12 3c2.5 2.5 3.8 5.5 3.8 9S14.5 18.5 12 21"></path>
+          <path d="M12 3c-2.5 2.5-3.8 5.5-3.8 9s1.3 6.5 3.8 9"></path>
+        </svg>
+        <select id="language">
+          <option value="en" title="English">EN</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main class="game-card">
+    <section class="scene-wrap">
+      <canvas id="game-canvas"></canvas>
+      <div id="thinking" class="thinking" hidden>
+        <span></span><span></span><span></span>
+        <strong data-i18n="status.thinkingAI">AI is playing</strong>
+      </div>
+    </section>
+
+    <aside class="side-panel" aria-live="polite">
+      <div>
+        <p id="turn-badge" class="turn-badge"></p>
+        <h2 id="status" data-i18n="status.statusInitial">Gameplay status</h2>
+        <p id="detail" class="detail"></p>
+      </div>
+
+      <div class="received-card">
+        <span data-i18n="piece.inPlay">Piece in play</span>
+        <strong id="piece-name" data-i18n="piece.none">None selected</strong>
+        <code id="piece-str">----</code>
+      </div>
+
+      <div class="legend">
+        <h3 data-i18n="piece.traits">Piece traits</h3>
+        <div><code>1</code><span data-i18n="piece.black">Black</span><span data-i18n="piece.big">Big</span><span data-i18n="piece.round">Round</span><span data-i18n="piece.solid">Solid</span></div>
+        <div><code>0</code><span data-i18n="piece.red">Red</span><span data-i18n="piece.small">Small</span><span data-i18n="piece.square">Square</span><span data-i18n="piece.hollow">Hollow</span></div>
+      </div>
+
+      <div class="bin-board-card">
+        <div class="bin-board-heading">
+          <h3 data-i18n="board.binary">Binary board</h3>
+          <span data-i18n="board.piecesPlaced">Placed pieces</span>
+        </div>
+        <div class="bin-board-wrap">
+          <div id="bin-board" class="bin-board">
+            <code data-binary-cell="0"></code>
+            <code data-binary-cell="1"></code>
+            <code data-binary-cell="2"></code>
+            <code data-binary-cell="3"></code>
+            <code data-binary-cell="4"></code>
+            <code data-binary-cell="5"></code>
+            <code data-binary-cell="6"></code>
+            <code data-binary-cell="7"></code>
+            <code data-binary-cell="8"></code>
+            <code data-binary-cell="9"></code>
+            <code data-binary-cell="10"></code>
+            <code data-binary-cell="11"></code>
+            <code data-binary-cell="12"></code>
+            <code data-binary-cell="13"></code>
+            <code data-binary-cell="14"></code>
+            <code data-binary-cell="15"></code>
+          </div>
+          <svg
+                  id="bin-win-overlay"
+                  class="bin-win-overlay"
+                  viewBox="0 0 4 4"
+                  aria-hidden="true"
+                  hidden
+          >
+          </svg>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <footer></footer>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
 </html>

@@ -1,4 +1,5 @@
 import "./style.scss";
+import { changeLang, curLang, initI18n, translate } from "./i18n";
 import { GameScene } from "./render/GameScene";
 import { GameController } from "./ui/GameController";
 
@@ -15,27 +16,34 @@ const status: HTMLElement = requiredElement<HTMLElement>("status");
 const detail: HTMLElement = requiredElement<HTMLElement>("detail");
 const thinking: HTMLElement = requiredElement<HTMLElement>("thinking");
 
-function showStartupError(error: unknown): void {
+function showStartupErr(error: unknown): void {
   thinking.hidden = true;
   canvas.hidden = true;
 
-  status.textContent = "3D-rendering is unavailable.";
-  detail.textContent = "Enable in the browser: WebGL and hardware acceleration.";
+  status.textContent = translate("error.renderingStatus");
+  detail.textContent = translate("error.renderingMsg");
 
   const fallback: HTMLDivElement = document.createElement("div");
   const heading: HTMLElement = document.createElement("strong");
   const message: HTMLSpanElement = document.createElement("span");
 
   fallback.className = "webgl-error";
-  heading.textContent = "WebGL could not start.";
-  message.textContent = "The game requires WebGL enabled in the browser.";
+  heading.textContent = translate("error.webglHeading");
+  message.textContent = translate("error.webglMsg");
   fallback.append(heading, message);
   canvas.parentElement?.append(fallback);
 
   console.error(error);
 }
 
-try {
+async function startApp(): Promise<void> {
+  await initI18n();
+  const language: HTMLSelectElement = requiredElement<HTMLSelectElement>("language");
+  language.value = curLang();
+  language.addEventListener("change", (): void => {
+    changeLang(language.value);
+  });
+
   let controller!: GameController;
   const scene = new GameScene(canvas, {
     onCellClick: (cell: number): void => controller.handleCellClick(cell),
@@ -63,6 +71,5 @@ try {
     wrapDiffPlayerTwoAI: requiredElement<HTMLElement>("diff-p-two-wrap"),
   });
   controller.start();
-} catch (error: unknown) {
-  showStartupError(error);
 }
+void startApp().catch(showStartupErr);
