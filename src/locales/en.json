@@ -1,0 +1,84 @@
+{
+  "app": {
+    "title": "AI-Quarto 3D",
+    "eyebrow": "A ported enhancement of {{game}} (game engine)",
+    "newGame": "New game"
+  },
+  "controls": {
+    "diffAI": "AI difficulty",
+    "diffPlayerOneAI": "AI-P1 difficulty",
+    "diffPlayerTwoAI": "AI-P2 difficulty",
+    "startingPlayer": "Starting player",
+    "gameMode": "Game mode"
+  },
+  "diff": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "mode": {
+    "userVsUser": "User vs user",
+    "userVsAI": "User vs AI",
+    "onlyAI": "AI vs AI"
+  },
+  "player": {
+    "playerYou": "You",
+    "playerOne": "Player 1",
+    "playerTwo": "Player 2",
+    "playerAI": "AI ({{difficulty}})",
+    "playerDiffAI": "AI-P{{number}} ({{difficulty}})",
+    "playerRandom": "Random"
+  },
+  "status": {
+    "badgeDraw": "Draw",
+    "badgeTurnAI": "{{player}}'s turn",
+    "badgeTurnPlacePlayer": "{{player}}'s turn: place a piece",
+    "badgeTurnPlaceYou": "Your turn: place a piece",
+    "badgeTurnSelectPlayer": "{{player}}'s turn: select a piece",
+    "badgeTurnSelectYou": "Your turn: select a piece",
+    "badgeVictory": "Victory",
+    "badgeVictoryAI": "AI victory",
+    "badgeVictoryPlayer": "{{player}} victory",
+    "detailDraw": "No moves remain to make a winning line.",
+    "detailTurnAI": "{{player}} is placing a piece and then selecting a new piece for {{opponent}}.",
+    "detailTurnPlace": "Click any highlighted board circle.",
+    "detailTurnSelect": "Select any available red or black piece.",
+    "detailTurnStartAI": "The selected piece will be passed to {{opponent}}.",
+    "detailWin": "The winning piece sequence is highlighted.",
+    "statusDraw": "The game is a draw.",
+    "statusInitial": "Gameplay status",
+    "statusTurnOpponentStart": "{{player}} is choosing the opening piece.",
+    "statusTurnOpponent": "{{player}} is playing...",
+    "statusTurnPlayerPlace": "{{player}}: place the received piece.",
+    "statusTurnPlayerPlaceVsAI": "Place the piece {{opponent}} has selected.",
+    "statusTurnPlayerSelect": "Select a piece for {{opponent}} to place.",
+    "statusTurnPlayerSelectVsAI": "{{player}}: select a piece for {{opponent}} to place.",
+    "statusWinAI": "The AI player wins.",
+    "statusWinPlayer": "{{player}} wins.",
+    "statusWinYou": "You win.",
+    "thinkingAI": "AI is playing"
+  },
+  "piece": {
+    "inPlay": "Piece in play",
+    "none": "None selected",
+    "traits": "Piece traits",
+    "black": "black",
+    "red": "red",
+    "big": "big",
+    "small": "small",
+    "round": "round",
+    "square": "square",
+    "solid": "solid",
+    "hollow": "hollow"
+  },
+  "board": {
+    "binary": "Binary board",
+    "piecesPlaced": "Placed pieces"
+  },
+  "error": {
+    "renderingStatus": "3D rendering is unavailable.",
+    "renderingMsg": "Enable WebGL and hardware acceleration in the browser.",
+    "webglHeading": "WebGL could not start.",
+    "webglMsg": "The game requires WebGL to be enabled in the browser."
+  }
+}

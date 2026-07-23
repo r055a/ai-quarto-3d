@@ -119,6 +119,37 @@ h1 {
       text-transform: uppercase;
     }
   }
+
+  .control-lang {
+    position: relative;
+    display: block;
+    align-self: end;
+    width: 88px;
+    min-width: 88px;
+
+    select {
+      width: 100%;
+      padding-left: 37px;
+      padding-right: 28px;
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+  }
+}
+
+.control-lang-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  z-index: 1;
+  transform: translateY(-50%);
+  pointer-events: none;
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 select,
@@ -533,6 +564,16 @@ footer {
 
     button {
       flex: 1 1 100%;
+    }
+
+    .control-lang {
+      flex: 0 0 88px;
+      width: 88px;
+      min-width: 88px;
+
+      select {
+        width: 88px;
+      }
     }
   }
 
