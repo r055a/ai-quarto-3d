@@ -9,7 +9,7 @@ import type { Cell, Difficulty, MoveAI, PieceId } from "../game/types";
 
 const MATE_SCORE: number = 100_000;
 const STARTING_CELLS = {
-  easy: [0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15],
+  easy: [1, 2, 4, 7, 8, 11, 13, 14],
   medium: [0, 3, 12, 15],
   hard: [5, 6, 9, 10],
 } as const satisfies Record<Difficulty, readonly number[]>;
@@ -349,7 +349,7 @@ function easyMove(
   const firstCell: number | undefined = legal[0];
 
   if (firstCell === undefined) {
-    throw new Error("No valid (AI-easy) move exists.");
+    throw new Error("No valid (AI) move exists.");
   }
 
   let cell: number;
@@ -412,29 +412,24 @@ function profile(difficulty: Difficulty, remainingPiecesCount: number): SearchPr
   }
 
   if (difficulty === "medium") {
-    return remainingPiecesCount > 6
-      ? { maxNodes: 50_641, maxDepth: 2 }
-      : { maxNodes: 100_000, maxDepth: 3 };
+    return remainingPiecesCount > 13
+      ? { maxNodes: 100_000, maxDepth: 3 }
+      : remainingPiecesCount > 11
+        ? { maxNodes: 100_000, maxDepth: 3 }
+        : { maxNodes: 100_000, maxDepth: 2 };
   }
 
   // hard difficulty
-  let hardDiffMaxNodes: number = Number.POSITIVE_INFINITY;
-  let hardDiffMaxDepth: number = CELL_COUNT - remainingPiecesCount + 1;
-
   if (remainingPiecesCount > 13) {
-    hardDiffMaxNodes = 1_000_000;
-    hardDiffMaxDepth = 2;
-  } else if (remainingPiecesCount > 10) {
-    hardDiffMaxNodes = 2_000_000;
-    hardDiffMaxDepth = 3;
-  } else if (remainingPiecesCount > 7) {
-    hardDiffMaxNodes = 4_000_000;
-    hardDiffMaxDepth = 4;
+    return { maxNodes: 1_000_000, maxDepth: 2 };
   }
-  return {
-    maxNodes: hardDiffMaxNodes,
-    maxDepth: hardDiffMaxDepth,
-  };
+  if (remainingPiecesCount > 10) {
+    return { maxNodes: 1_000_000, maxDepth: 4 };
+  }
+  if (remainingPiecesCount > 4) {
+    return { maxNodes: 1_000_000, maxDepth: 5 };
+  }
+  return { maxNodes: 1_000_000, maxDepth: remainingPiecesCount };
 }
 
 export function findMoveAI(
@@ -444,7 +439,10 @@ export function findMoveAI(
   difficulty: Difficulty,
   options: SearchOptions = {},
 ): MoveAI {
-  if (difficulty === "easy" && remainingPieces.length <= 8) {
+  if (difficulty === "easy" && remainingPieces.length < 13) {
+    return easyMove(board, remainingPieces, currentPiece, options.startCell);
+  }
+  if (difficulty === "medium" && remainingPieces.length < 4) {
     return easyMove(board, remainingPieces, currentPiece, options.startCell);
   }
 
