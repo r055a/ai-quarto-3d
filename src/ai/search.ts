@@ -349,7 +349,7 @@ function easyMove(
   const firstCell: number | undefined = legal[0];
 
   if (firstCell === undefined) {
-    throw new Error("No valid (AI-easy) move exists.");
+    throw new Error("No valid (AI) move exists.");
   }
 
   let cell: number;
@@ -414,7 +414,7 @@ function profile(difficulty: Difficulty, remainingPiecesCount: number): SearchPr
   if (difficulty === "medium") {
     return remainingPiecesCount > 13
       ? { maxNodes: 100_000, maxDepth: 3 }
-      : remainingPiecesCount > 10
+      : remainingPiecesCount > 11
         ? { maxNodes: 100_000, maxDepth: 3 }
         : { maxNodes: 100_000, maxDepth: 2 };
   }
@@ -439,7 +439,7 @@ export function findMoveAI(
   difficulty: Difficulty,
   options: SearchOptions = {},
 ): MoveAI {
-  if (difficulty === "easy" && remainingPieces.length < 12) {
+  if (difficulty === "easy" && remainingPieces.length < 13) {
     return easyMove(board, remainingPieces, currentPiece, options.startCell);
   }
   if (difficulty === "medium" && remainingPieces.length < 4) {
