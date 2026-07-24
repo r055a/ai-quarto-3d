@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    testTimeout: 10_000_000, // 10-second average max per test/game
+    testTimeout: 300_000,
   },
 });
