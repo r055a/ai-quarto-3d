@@ -2,7 +2,9 @@
 
 AI-Quarto in 3D using negamax with alpha-beta pruning and three.js UI. 
 
-A ported enhancement of past Uppsala University project: [uni-git-projects/uu-game](https://uni-git-projects.github.io/.github/private-repos/uu-game/). Not affiliated with Gigamic.
+A port of past Uppsala University project: [uni-git-projects](https://github.com/uni-git-projects)/uu-game. Not affiliated with Gigamic.
+
+Enhanced using skills from other advanced (full-stack, UI) web development, software engineering, AI/ML and data engineering, etc studies.
 
 # Install
 
@@ -29,7 +31,7 @@ npm run preview
 # Test
 
 ```Bash
-npm run test
+npm test
 ```
 
 ### Example 
