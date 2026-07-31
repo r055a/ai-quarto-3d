@@ -9,7 +9,9 @@
     "diffPlayerOneAI": "AI-P1 difficulty",
     "diffPlayerTwoAI": "AI-P2 difficulty",
     "startingPlayer": "Starting player",
-    "gameMode": "Game mode"
+    "gameMode": "Game mode",
+    "pauseAI": "Pause AI",
+    "resumeAI": "Resume AI"
   },
   "diff": {
     "easy": "Easy",
@@ -56,7 +58,8 @@
     "statusWinAI": "The AI player wins.",
     "statusWinPlayer": "{{player}} wins.",
     "statusWinYou": "You win.",
-    "thinkingAI": "AI is playing"
+    "thinkingAI": "AI is playing",
+    "thinkingAIPaused": "AI is paused"
   },
   "piece": {
     "inPlay": "Piece in play",
