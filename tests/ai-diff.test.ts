@@ -137,16 +137,16 @@ function expectAllRunsToPass(testResults: readonly TestCaseRes[]): void {
 }
 
 describe(`${TEST_CASE_RUNS}-match AI vs AI`, (): void => {
-  // it(`hard vs hard: ${TEST_CASE_RUNS} draws`, (): void => {
-  //   expectAllRunsToPass(runTestCase("hard", "hard", "draw"));
-  // });
-  // it(`hard vs medium: ${TEST_CASE_RUNS} hard wins`, (): void => {
-  //   expectAllRunsToPass(runTestCase("hard", "medium", "hard"));
-  // });
+  it(`hard vs hard: ${TEST_CASE_RUNS} draws`, (): void => {
+    expectAllRunsToPass(runTestCase("hard", "hard", "draw"));
+  });
+  it(`hard vs medium: ${TEST_CASE_RUNS} hard wins`, (): void => {
+    expectAllRunsToPass(runTestCase("hard", "medium", "hard"));
+  });
   it(`hard vs easy: ${TEST_CASE_RUNS} hard wins`, (): void => {
     expectAllRunsToPass(runTestCase("hard", "easy", "hard"));
   });
-  // it(`medium vs easy: ${TEST_CASE_RUNS} medium wins`, (): void => {
-  //   expectAllRunsToPass(runTestCase("medium", "easy", "medium"));
-  // });
+  it(`medium vs easy: ${TEST_CASE_RUNS} medium wins`, (): void => {
+    expectAllRunsToPass(runTestCase("medium", "easy", "medium"));
+  });
 });
