@@ -26,7 +26,7 @@ import {
 } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GAME_PIECES, getPieceTraits, type PieceTraits } from "../game/pieces";
-import { BOARD_SIZE, CELL_COUNT, getWinLine } from "../game/rules";
+import { BOARD_SIZE, CELL_COUNT, getWinLines } from "../game/rules";
 import type { Cell, Phase, PieceId } from "../game/types";
 
 const BOARD_SPACE: number = 1.16;
@@ -328,7 +328,10 @@ export class GameScene {
       );
     }
 
-    const winningCells = new Set(getWinLine(this.state.board) ?? []);
+    const winningCells = new Set<number>();
+    for (const winLine of getWinLines(this.state.board)) {
+      for (const cell of winLine) winningCells.add(cell);
+    }
     const remaining = new Set(this.state.remaining);
     const pieceCells = new Map<PieceId, number>();
     for (const [cell, piece] of this.state.board.entries()) {
