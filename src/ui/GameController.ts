@@ -1,6 +1,13 @@
 import { getRandVal, selectStartCell, selectStartPiece } from "../ai/search";
 import { GAME_PIECES, pieceStr, TRAIT_MASK } from "../game/pieces";
-import { CELL_COUNT, getTraitMask, getWinLine, isBoardEmpty, isBoardFull } from "../game/rules";
+import {
+  CELL_COUNT,
+  getTraitMask,
+  getWinLine,
+  getWinLines,
+  isBoardEmpty,
+  isBoardFull,
+} from "../game/rules";
 import type {
   Cell,
   Difficulty,
@@ -424,14 +431,20 @@ export class GameController {
   }
 
   private renderBinBoard(): void {
-    const winLine: WinLine | null = getWinLine(this.board);
-    const showWinLine: boolean = this.phase === "finished" && winLine !== null;
-    const winTraits: number =
-      showWinLine && winLine !== null ? getTraitMask(this.board, winLine) : 0;
+    const winLines: WinLine[] = this.phase === "finished" ? getWinLines(this.board) : [];
+    const showWinLine: boolean = winLines.length > 0;
+    const winTraitsByCell = new Map<number, number>();
+    for (const winLine of winLines) {
+      const winTraits: number = getTraitMask(this.board, winLine);
+      for (const cell of winLine) {
+        winTraitsByCell.set(cell, (winTraitsByCell.get(cell) ?? 0) | winTraits);
+      }
+    }
 
     for (const [cell, element] of this.elements.binCells.entries()) {
       const piece: Cell | undefined = this.board[cell];
-      const isWinCell: boolean | undefined = showWinLine && winLine?.includes(cell);
+      const winTraits: number = winTraitsByCell.get(cell) ?? 0;
+      const isWinCell: boolean = showWinLine && winTraitsByCell.has(cell);
       element.classList.toggle("win", isWinCell);
 
       if (piece === null || piece === undefined) {
@@ -442,7 +455,7 @@ export class GameController {
       }
 
       const pieceBinStr: string = pieceStr(piece);
-      this.renderWinBinBits(element, piece, isWinCell ? winTraits : 0);
+      this.renderWinBinBits(element, piece, winTraits);
       element.classList.add("occupied");
       element.setAttribute("aria-label", `Cell ${cell + 1}: ${pieceBinStr}`);
     }

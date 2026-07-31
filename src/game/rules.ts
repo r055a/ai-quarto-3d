@@ -81,6 +81,10 @@ export function getWinLine(board: readonly Cell[]): WinLine | null {
   return null;
 }
 
+export function getWinLines(board: readonly Cell[]): WinLine[] {
+  return BOARD_WIN_LINES.filter((line: WinLine): boolean => isWinLine(board, line));
+}
+
 export function isWinCellPlacement(board: readonly Cell[], cell: number, piece: PieceId): boolean {
   if (cell < 0 || cell >= board.length || board[cell] !== null) {
     return false;

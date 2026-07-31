@@ -44,7 +44,7 @@
     "detailTurnPlace": "Click any highlighted board circle.",
     "detailTurnSelect": "Select any available red or black piece.",
     "detailTurnStartAI": "The selected piece will be passed to {{opponent}}.",
-    "detailWin": "The winning piece sequence is highlighted.",
+    "detailWin": "The winning piece sequence(s) is highlighted.",
     "statusDraw": "The game is a draw.",
     "statusInitial": "Gameplay status",
     "statusTurnOpponentStart": "{{player}} is choosing the opening piece.",
