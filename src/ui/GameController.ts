@@ -307,9 +307,9 @@ class GameController {
   ): void => {
     const res: ResponseAI = event.data;
     if (
-        res.reqId !== this.requestId ||
-        res.reqId !== this.activeReqAI?.reqId ||
-        res.type === "progress"
+      res.reqId !== this.requestId ||
+      res.reqId !== this.activeReqAI?.reqId ||
+      res.type === "progress"
     ) {
       return;
     }
@@ -371,7 +371,7 @@ class GameController {
     if (this.isGameFinn(curTurn)) return;
 
     const selected: number | null =
-        nxtPiece !== null && this.remaining.includes(nxtPiece)
+      nxtPiece !== null && this.remaining.includes(nxtPiece)
         ? nxtPiece
         : (this.remaining[0] ?? null);
     if (selected === null) {
@@ -440,11 +440,11 @@ class GameController {
     this.elements.thinking.hidden = this.phase !== "thinking";
     this.elements.thinking.classList.toggle("is-paused", this.isPauseAI);
     this.elements.thinkingLabel.textContent = translate(
-        this.isPauseAI ? "status.thinkingAIPaused" : "status.thinkingAI",
+      this.isPauseAI ? "status.thinkingAIPaused" : "status.thinkingAI",
     );
 
     const pauseControlLabel: string = translate(
-        this.isPauseAI ? "controls.resumeAI" : "controls.pauseAI",
+      this.isPauseAI ? "controls.resumeAI" : "controls.pauseAI",
     );
     this.elements.pauseToggleAI.setAttribute("aria-label", pauseControlLabel);
     this.elements.pauseToggleAI.setAttribute("aria-pressed", String(this.isPauseAI));
@@ -683,4 +683,4 @@ class GameController {
   }
 }
 
-export default GameController
+export default GameController;
