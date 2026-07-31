@@ -1,7 +1,7 @@
 import "./style.scss";
 import { changeLang, curLang, initI18n, translate } from "./i18n";
 import { GameScene } from "./render/GameScene";
-import { GameController } from "./ui/GameController";
+import GameController from "./ui/GameController";
 
 function requiredElement<T extends Element>(id: string): T {
   const element: T | null = document.querySelector<T>(`#${id}`);
@@ -52,6 +52,7 @@ async function startApp(): Promise<void> {
   });
 
   controller = new GameController(scene, {
+    pauseToggleAI: requiredElement<HTMLButtonElement>("ai-pause-toggle"),
     binCells: [...document.querySelectorAll<HTMLElement>("[data-binary-cell]")],
     binWinOverlay: requiredElement<SVGSVGElement>("bin-win-overlay"),
     detail,
@@ -65,6 +66,7 @@ async function startApp(): Promise<void> {
     starter: requiredElement<HTMLSelectElement>("starter"),
     status,
     thinking,
+    thinkingLabel: requiredElement<HTMLElement>("thinking-label"),
     turnBadge: requiredElement<HTMLElement>("turn-badge"),
     wrapDiffAI: requiredElement<HTMLElement>("diff-wrap"),
     wrapDiffPlayerOneAI: requiredElement<HTMLElement>("diff-p-one-wrap"),

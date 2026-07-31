@@ -25,6 +25,7 @@ import { diffLabel, onLangChange, translate, translateTraits } from "../i18n";
 import type { GameScene } from "../render/GameScene";
 
 interface Elements {
+  pauseToggleAI: HTMLButtonElement;
   binCells: HTMLElement[];
   binWinOverlay: SVGSVGElement;
   detail: HTMLElement;
@@ -38,13 +39,27 @@ interface Elements {
   starter: HTMLSelectElement;
   status: HTMLElement;
   thinking: HTMLElement;
+  thinkingLabel: HTMLElement;
   turnBadge: HTMLElement;
   wrapDiffAI: HTMLElement;
   wrapDiffPlayerOneAI: HTMLElement;
   wrapDiffPlayerTwoAI: HTMLElement;
 }
 
-export class GameController {
+interface TimerAI {
+  callback: () => void;
+  id: number | null;
+  remainingMS: number;
+  startedAt: number;
+}
+
+interface DeferMoveAI {
+  cell: number;
+  nxtPiece: PieceId | null;
+  reqId: number;
+}
+
+class GameController {
   private board: Cell[] = Array(CELL_COUNT).fill(null);
   private remaining: PieceId[] = [...GAME_PIECES];
   private pendingPiece: PieceId | null = null;
@@ -53,19 +68,22 @@ export class GameController {
   private winner: Turn | "draw" | null = null;
   private requestId: number = 0;
   private random: () => number = getRandVal();
-  private readonly worker: Worker = new Worker(new URL("../ai/ai.worker.ts", import.meta.url), {
-    type: "module",
-  });
+  private isPauseAI: boolean = false;
+  private timerAI: TimerAI | null = null;
+  private activeReqAI: RequestAI | null = null;
+  private deferMoveAI: DeferMoveAI | null = null;
+  private pendRecoverAI: boolean = false;
+  private worker: Worker | null = null;
 
   constructor(
     private readonly scene: GameScene,
     private readonly elements: Elements,
   ) {
-    this.worker.addEventListener("message", this.onWorkerMsg);
     onLangChange((): void => {
       this.updateStartOptions();
       this.updateUI();
     });
+    this.elements.pauseToggleAI.addEventListener("click", this.togglePauseAI);
     this.elements.newGame.addEventListener("click", this.newGame);
     this.elements.starter.addEventListener("change", this.newGame);
     this.elements.gameMode.addEventListener("change", (): void => {
@@ -129,6 +147,12 @@ export class GameController {
 
   private readonly newGame: () => void = (): void => {
     this.requestId += 1;
+    this.timerClearAI(true);
+    this.workerTerminate();
+    this.activeReqAI = null;
+    this.deferMoveAI = null;
+    this.pendRecoverAI = false;
+    this.isPauseAI = false;
     this.random = getRandVal();
     this.board = Array(CELL_COUNT).fill(null);
     this.remaining = [...GAME_PIECES];
@@ -176,14 +200,14 @@ export class GameController {
 
   private scheduleTurnAI(delayMS: number): void {
     const turnID: number = this.requestId;
-    window.setTimeout((): void => {
+    this.timerSetAI(delayMS, (): void => {
       if (!this.isCurTurnAI(turnID)) return;
       if (this.pendingPiece === null) {
         this.selectStartPieceAI(turnID);
       } else {
         this.requestMoveAI();
       }
-    }, delayMS);
+    });
   }
 
   private isCurTurnAI(turnID = this.requestId): boolean {
@@ -212,7 +236,7 @@ export class GameController {
     if (this.pendingPiece === null) return;
 
     const diff: Difficulty = this.turnDiff(this.activeTurn);
-    const request: RequestAI = {
+    this.activeReqAI = {
       type: "find-move",
       reqId: ++this.requestId,
       board: [...this.board],
@@ -225,29 +249,109 @@ export class GameController {
           }
         : {}),
     };
-    this.worker.postMessage(request);
+    this.postActiveReqAI();
   }
+
+  private postActiveReqAI(): void {
+    if (this.isPauseAI || this.activeReqAI === null) return;
+    this.workerTerminate();
+    this.worker = new Worker(new URL("../ai/ai.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    this.worker.addEventListener("message", this.onWorkerMsg);
+    this.worker.postMessage(this.activeReqAI);
+  }
+
+  private workerTerminate(): void {
+    if (this.worker === null) return;
+    this.worker.removeEventListener("message", this.onWorkerMsg);
+    this.worker.terminate();
+    this.worker = null;
+  }
+
+  private readonly togglePauseAI: () => void = (): void => {
+    if (this.phase !== "thinking" || this.getTurnPlayer(this.activeTurn) !== "ai") return;
+
+    this.isPauseAI = !this.isPauseAI;
+    if (this.isPauseAI) {
+      this.timerPauseAI();
+      this.workerTerminate();
+      this.updateUI();
+      return;
+    }
+
+    this.updateUI();
+    if (this.timerAI !== null) {
+      this.timerResumeAI();
+      return;
+    }
+
+    if (this.deferMoveAI !== null) {
+      const move: DeferMoveAI = this.deferMoveAI;
+      this.deferMoveAI = null;
+      void this.applyMoveAI(move.cell, move.nxtPiece, move.reqId);
+      return;
+    }
+
+    if (this.pendRecoverAI) {
+      this.pendRecoverAI = false;
+      this.recoverFB();
+      return;
+    }
+
+    this.postActiveReqAI();
+  };
 
   private readonly onWorkerMsg: (event: MessageEvent<ResponseAI>) => void = (
     event: MessageEvent<ResponseAI>,
   ): void => {
-    const response: ResponseAI = event.data;
-    if (response.reqId !== this.requestId || response.type === "progress") {
+    const res: ResponseAI = event.data;
+    if (
+        res.reqId !== this.requestId ||
+        res.reqId !== this.activeReqAI?.reqId ||
+        res.type === "progress"
+    ) {
       return;
     }
-    if (response.type === "error") {
+
+    this.workerTerminate();
+    this.activeReqAI = null;
+
+    if (res.type === "error") {
+      if (this.isPauseAI) {
+        this.pendRecoverAI = true;
+        return;
+      }
       this.recoverFB();
       return;
     }
-    void this.applyMoveAI(response.move.cell, response.move.nxtPiece, response.reqId);
+
+    if (this.isPauseAI) {
+      this.deferMoveAI = {
+        cell: res.move.cell,
+        nxtPiece: res.move.nxtPiece,
+        reqId: res.reqId,
+      };
+      return;
+    }
+    void this.applyMoveAI(res.move.cell, res.move.nxtPiece, res.reqId);
   };
 
   private async applyMoveAI(
     cell: number,
-    nextPiece: PieceId | null,
+    nxtPiece: PieceId | null,
     moveRequestId: number = this.requestId,
   ): Promise<void> {
     if (moveRequestId !== this.requestId || !this.isCurTurnAI() || this.pendingPiece === null) {
+      return;
+    }
+
+    if (this.isPauseAI) {
+      this.deferMoveAI = {
+        cell,
+        nxtPiece,
+        reqId: moveRequestId,
+      };
       return;
     }
 
@@ -261,14 +365,14 @@ export class GameController {
     this.pendingPiece = null;
     this.syncScene();
 
-    await this.delay(520);
+    await this.delayAI(520);
 
     if (moveRequestId !== this.requestId) return;
     if (this.isGameFinn(curTurn)) return;
 
     const selected: number | null =
-      nextPiece !== null && this.remaining.includes(nextPiece)
-        ? nextPiece
+        nxtPiece !== null && this.remaining.includes(nxtPiece)
+        ? nxtPiece
         : (this.remaining[0] ?? null);
     if (selected === null) {
       this.gameFinn("draw");
@@ -289,6 +393,11 @@ export class GameController {
 
   private recoverFB(): void {
     if (this.pendingPiece === null) return;
+
+    if (this.isPauseAI) {
+      this.pendRecoverAI = true;
+      return;
+    }
 
     const cell: number = isBoardEmpty(this.board)
       ? selectStartCell(this.board, this.turnDiff(this.activeTurn), this.random)
@@ -314,6 +423,12 @@ export class GameController {
   }
 
   private gameFinn(curTurn: Turn | "draw"): void {
+    this.requestId += 1;
+    this.timerClearAI(true);
+    this.workerTerminate();
+    this.activeReqAI = null;
+    this.deferMoveAI = null;
+    this.pendRecoverAI = false;
     this.winner = curTurn;
     this.phase = "finished";
     this.pendingPiece = null;
@@ -323,6 +438,17 @@ export class GameController {
   private updateUI(): void {
     this.syncScene();
     this.elements.thinking.hidden = this.phase !== "thinking";
+    this.elements.thinking.classList.toggle("is-paused", this.isPauseAI);
+    this.elements.thinkingLabel.textContent = translate(
+        this.isPauseAI ? "status.thinkingAIPaused" : "status.thinkingAI",
+    );
+
+    const pauseControlLabel: string = translate(
+        this.isPauseAI ? "controls.resumeAI" : "controls.pauseAI",
+    );
+    this.elements.pauseToggleAI.setAttribute("aria-label", pauseControlLabel);
+    this.elements.pauseToggleAI.setAttribute("aria-pressed", String(this.isPauseAI));
+    this.elements.pauseToggleAI.title = pauseControlLabel;
 
     if (this.phase === "finished") {
       if (this.winner === "draw") {
@@ -511,9 +637,50 @@ export class GameController {
     return turn === "player1" ? "player2" : "player1";
   }
 
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve: (value: void | PromiseLike<void>) => void): number =>
-      window.setTimeout(resolve, ms),
-    );
+  private delayAI(ms: number): Promise<void> {
+    return new Promise((resolve: () => void): void => {
+      this.timerSetAI(ms, resolve);
+    });
+  }
+
+  private timerSetAI(delayMS: number, callback: () => void): void {
+    this.timerClearAI();
+    this.timerAI = {
+      callback,
+      id: null,
+      remainingMS: Math.max(0, delayMS),
+      startedAt: 0,
+    };
+    this.timerResumeAI();
+  }
+
+  private timerResumeAI(): void {
+    const timer: TimerAI | null = this.timerAI;
+    if (timer === null || timer.id !== null || this.isPauseAI) return;
+    timer.startedAt = performance.now();
+    timer.id = window.setTimeout((): void => {
+      if (this.timerAI !== timer) return;
+      timer.id = null;
+      this.timerAI = null;
+      timer.callback();
+    }, timer.remainingMS);
+  }
+
+  private timerPauseAI(): void {
+    const timer: TimerAI | null = this.timerAI;
+    if (timer === null || timer.id === null) return;
+    window.clearTimeout(timer.id);
+    timer.id = null;
+    timer.remainingMS = Math.max(0, timer.remainingMS - (performance.now() - timer.startedAt));
+  }
+
+  private timerClearAI(runCallback = false): void {
+    const timer: TimerAI | null = this.timerAI;
+    if (timer === null) return;
+    if (timer.id !== null) window.clearTimeout(timer.id);
+    this.timerAI = null;
+    if (runCallback) timer.callback();
   }
 }
+
+export default GameController

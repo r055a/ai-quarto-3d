@@ -113,7 +113,21 @@
       <canvas id="game-canvas"></canvas>
       <div id="thinking" class="thinking" hidden>
         <span></span><span></span><span></span>
-        <strong data-i18n="status.thinkingAI">AI is playing</strong>
+        <strong id="thinking-label" data-i18n="status.thinkingAI">AI is playing</strong>
+        <button
+                id="ai-pause-toggle"
+                class="thinking-toggle"
+                type="button"
+                aria-label="Pause AI"
+                title="Pause AI"
+        >
+          <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 6v12M16 6v12"></path>
+          </svg>
+          <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 6 9 6-9 6Z"></path>
+          </svg>
+        </button>
       </div>
     </section>
 
