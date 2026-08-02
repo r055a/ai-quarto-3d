@@ -52,7 +52,6 @@ async function startApp(): Promise<void> {
   });
 
   controller = new GameController(scene, {
-    pauseToggleAI: requiredElement<HTMLButtonElement>("ai-pause-toggle"),
     binCells: [...document.querySelectorAll<HTMLElement>("[data-binary-cell]")],
     binWinOverlay: requiredElement<SVGSVGElement>("bin-win-overlay"),
     detail,
@@ -61,13 +60,16 @@ async function startApp(): Promise<void> {
     diffPlayerTwoAI: requiredElement<HTMLSelectElement>("diff-p-two"),
     gameMode: requiredElement<HTMLSelectElement>("game-mode"),
     newGame: requiredElement<HTMLButtonElement>("new-game"),
+    pauseToggleAI: requiredElement<HTMLButtonElement>("ai-pause-toggle"),
     pieceName: requiredElement<HTMLElement>("piece-name"),
     pieceStr: requiredElement<HTMLElement>("piece-str"),
+    redo: requiredElement<HTMLButtonElement>("redo"),
     starter: requiredElement<HTMLSelectElement>("starter"),
     status,
     thinking,
     thinkingLabel: requiredElement<HTMLElement>("thinking-label"),
     turnBadge: requiredElement<HTMLElement>("turn-badge"),
+    undo: requiredElement<HTMLButtonElement>("undo"),
     wrapDiffAI: requiredElement<HTMLElement>("diff-wrap"),
     wrapDiffPlayerOneAI: requiredElement<HTMLElement>("diff-p-one-wrap"),
     wrapDiffPlayerTwoAI: requiredElement<HTMLElement>("diff-p-two-wrap"),

@@ -8,6 +8,7 @@ import {
   isBoardEmpty,
   isBoardFull,
 } from "../game/rules";
+import { getRedoTarget, getUndoTarget, type HistEvent, type HistEventType } from "../game/state";
 import type {
   Cell,
   Difficulty,
@@ -24,8 +25,9 @@ import type {
 import { diffLabel, onLangChange, translate, translateTraits } from "../i18n";
 import type { GameScene } from "../render/GameScene";
 
+type StepAI = "select-open" | HistEventType | null;
+
 interface Elements {
-  pauseToggleAI: HTMLButtonElement;
   binCells: HTMLElement[];
   binWinOverlay: SVGSVGElement;
   detail: HTMLElement;
@@ -34,13 +36,16 @@ interface Elements {
   diffPlayerTwoAI: HTMLSelectElement;
   gameMode: HTMLSelectElement;
   newGame: HTMLButtonElement;
+  pauseToggleAI: HTMLButtonElement;
   pieceName: HTMLElement;
   pieceStr: HTMLElement;
+  redo: HTMLButtonElement;
   starter: HTMLSelectElement;
   status: HTMLElement;
   thinking: HTMLElement;
   thinkingLabel: HTMLElement;
   turnBadge: HTMLElement;
+  undo: HTMLButtonElement;
   wrapDiffAI: HTMLElement;
   wrapDiffPlayerOneAI: HTMLElement;
   wrapDiffPlayerTwoAI: HTMLElement;
@@ -59,6 +64,18 @@ interface DeferMoveAI {
   reqId: number;
 }
 
+interface GameState {
+  activeTurn: Turn;
+  nxtPieceAI: PieceId | null;
+  stepAI: StepAI;
+  board: Cell[];
+  pendingPiece: PieceId | null;
+  phase: Phase;
+  remaining: PieceId[];
+  turnId: number;
+  winner: Turn | "draw" | null;
+}
+
 class GameController {
   private board: Cell[] = Array(CELL_COUNT).fill(null);
   private remaining: PieceId[] = [...GAME_PIECES];
@@ -74,6 +91,13 @@ class GameController {
   private deferMoveAI: DeferMoveAI | null = null;
   private pendRecoverAI: boolean = false;
   private worker: Worker | null = null;
+  private turnId: number = 0;
+  private stepAI: StepAI = null;
+  private nxtPieceAI: PieceId | null = null;
+  private histEvents: HistEvent[] = [];
+  private histStates: GameState[] = [];
+  private histIdx: number = 0;
+  private isReview: boolean = false;
 
   constructor(
     private readonly scene: GameScene,
@@ -89,6 +113,8 @@ class GameController {
     this.elements.gameMode.addEventListener("change", (): void => {
       this.start();
     });
+    this.elements.undo.addEventListener("click", this.undo);
+    this.elements.redo.addEventListener("click", this.redo);
 
     for (const control of [
       this.elements.diffAI,
@@ -109,6 +135,7 @@ class GameController {
 
   handlePieceClick(piece: PieceId): void {
     if (
+      this.isReview ||
       this.phase !== "select" ||
       !this.isTurnUser(this.activeTurn) ||
       !this.remaining.includes(piece)
@@ -120,6 +147,7 @@ class GameController {
 
   handleCellClick(cell: number): void {
     if (
+      this.isReview ||
       this.phase !== "place" ||
       !this.isTurnUser(this.activeTurn) ||
       this.pendingPiece === null ||
@@ -128,12 +156,21 @@ class GameController {
       return;
     }
 
+    const turnPlayer: Turn = this.activeTurn;
+    const turnId: number = this.turnId;
+
     this.board[cell] = this.pendingPiece;
     this.pendingPiece = null;
+    this.stepAI = null;
+    this.nxtPieceAI = null;
 
-    if (this.isGameFinn(this.activeTurn)) return;
+    if (this.isGameFinn(turnPlayer)) {
+      this.saveGameState(turnPlayer, turnId, "place");
+      return;
+    }
     this.phase = "select";
     this.updateUI();
+    this.saveGameState(turnPlayer, turnId, "place");
   }
 
   handlePieceHover(piece: PieceId | null): void {
@@ -160,7 +197,16 @@ class GameController {
     this.winner = null;
     this.activeTurn = this.getRandomStarter(this.elements.starter.value as Starter);
     this.phase = "select";
+    this.stepAI = null;
+    this.nxtPieceAI = null;
+    this.isReview = false;
+    this.turnId = 0;
+    this.histEvents = [];
+    this.histStates = [];
+    this.histIdx = 0;
     this.startTurn();
+    this.histStates = [this.captureGameState()];
+    this.updateHistControl();
   };
 
   private updateStartOptions(): void {
@@ -190,28 +236,53 @@ class GameController {
   private startTurn(): void {
     if (this.getTurnPlayer(this.activeTurn) === "ai") {
       this.phase = "thinking";
+      this.stepAI = this.pendingPiece === null ? "select-open" : "place";
+      this.nxtPieceAI = null;
       this.updateUI();
-      this.scheduleTurnAI(this.pendingPiece === null ? 400 : 650);
+      this.turnScheduleAI(this.pendingPiece === null ? 400 : 650);
       return;
     }
     this.phase = this.pendingPiece === null ? "select" : "place";
+    this.isPauseAI = false;
+    this.stepAI = null;
+    this.nxtPieceAI = null;
     this.updateUI();
   }
 
-  private scheduleTurnAI(delayMS: number): void {
+  private turnScheduleAI(delayMS: number): void {
     const turnID: number = this.requestId;
     this.timerSetAI(delayMS, (): void => {
-      if (!this.isCurTurnAI(turnID)) return;
-      if (this.pendingPiece === null) {
-        this.selectStartPieceAI(turnID);
-      } else {
-        this.requestMoveAI();
-      }
+      this.turnResumeAI(turnID);
     });
+  }
+
+  private turnSelectAI(piece: PieceId | null, turnID: number): void {
+    if (!this.isCurTurnAI(turnID) || this.stepAI !== "select") return;
+    const selectedPiece: PieceId | null =
+      piece !== null && this.remaining.includes(piece) ? piece : (this.remaining[0] ?? null);
+    if (selectedPiece === null) {
+      this.gameFinn("draw");
+      return;
+    }
+    this.passPiece(selectedPiece);
+  }
+
+  private turnResumeAI(turnID: number): void {
+    if (!this.isCurTurnAI(turnID)) return;
+    else if (this.stepAI === "select-open") {
+      this.selectStartPieceAI(turnID);
+      return;
+    } else if (this.stepAI === "place") {
+      this.requestMoveAI();
+      return;
+    } else if (this.stepAI === "select") {
+      this.turnSelectAI(this.nxtPieceAI, turnID);
+    }
   }
 
   private isCurTurnAI(turnID = this.requestId): boolean {
     return (
+      !this.isReview &&
       turnID === this.requestId &&
       this.phase === "thinking" &&
       this.getTurnPlayer(this.activeTurn) === "ai"
@@ -226,10 +297,16 @@ class GameController {
   }
 
   private passPiece(piece: PieceId): void {
+    const curPlayer: Turn = this.activeTurn;
+    const turnId: number = this.turnId;
+
     this.remaining = this.remaining.filter((bitVal: number): boolean => bitVal !== piece);
     this.pendingPiece = piece;
     this.activeTurn = this.toggleTurn(this.activeTurn);
+    this.turnId += 1;
+
     this.startTurn();
+    this.saveGameState(curPlayer, turnId, "select");
   }
 
   private requestMoveAI(): void {
@@ -253,7 +330,7 @@ class GameController {
   }
 
   private postActiveReqAI(): void {
-    if (this.isPauseAI || this.activeReqAI === null) return;
+    if (this.isReview || this.isPauseAI || this.activeReqAI === null) return;
     this.workerTerminate();
     this.worker = new Worker(new URL("../ai/ai.worker.ts", import.meta.url), {
       type: "module",
@@ -270,7 +347,13 @@ class GameController {
   }
 
   private readonly togglePauseAI: () => void = (): void => {
-    if (this.phase !== "thinking" || this.getTurnPlayer(this.activeTurn) !== "ai") return;
+    if (
+      this.isReview ||
+      this.phase !== "thinking" ||
+      this.getTurnPlayer(this.activeTurn) !== "ai"
+    ) {
+      return;
+    }
 
     this.isPauseAI = !this.isPauseAI;
     if (this.isPauseAI) {
@@ -300,6 +383,28 @@ class GameController {
     }
 
     this.postActiveReqAI();
+  };
+
+  private readonly undo: () => void = (): void => {
+    if (!this.isHistNav() || this.histIdx <= 0) return;
+    const target: number = getUndoTarget(
+      this.histEvents,
+      this.histIdx,
+      this.isReview,
+      (action: HistEvent): boolean => this.getTurnPlayer(action.curPlayer) === "ai",
+    );
+    this.restoreHistory(target);
+  };
+
+  private readonly redo: () => void = (): void => {
+    if (!this.isHistNav() || this.histIdx >= this.histEvents.length) return;
+    const target: number = getRedoTarget(
+      this.histEvents,
+      this.histIdx,
+      this.isReview,
+      (action: HistEvent): boolean => this.getTurnPlayer(action.curPlayer) === "ai",
+    );
+    this.restoreHistory(target);
   };
 
   private readonly onWorkerMsg: (event: MessageEvent<ResponseAI>) => void = (
@@ -360,29 +465,30 @@ class GameController {
       return;
     }
 
-    const curTurn: Turn = this.activeTurn;
-    this.board[cell] = this.pendingPiece;
-    this.pendingPiece = null;
-    this.syncScene();
-
-    await this.delayAI(520);
-
-    if (moveRequestId !== this.requestId) return;
-    if (this.isGameFinn(curTurn)) return;
-
-    const selected: number | null =
+    const curPlayer: Turn = this.activeTurn;
+    const turnId: number = this.turnId;
+    const selectedPiece: PieceId | null =
       nxtPiece !== null && this.remaining.includes(nxtPiece)
         ? nxtPiece
         : (this.remaining[0] ?? null);
-    if (selected === null) {
-      this.gameFinn("draw");
+
+    this.board[cell] = this.pendingPiece;
+    this.pendingPiece = null;
+
+    this.stepAI = "select";
+    this.nxtPieceAI = selectedPiece;
+
+    if (this.isGameFinn(curPlayer)) {
+      this.saveGameState(curPlayer, turnId, "place");
       return;
     }
 
-    this.remaining = this.remaining.filter((piece: number): boolean => piece !== selected);
-    this.pendingPiece = selected;
-    this.activeTurn = this.toggleTurn(curTurn);
-    this.startTurn();
+    this.syncScene();
+    this.saveGameState(curPlayer, turnId, "place");
+    await this.delayAI(520);
+
+    if (moveRequestId !== this.requestId) return;
+    this.turnSelectAI(selectedPiece, moveRequestId);
   }
 
   private isValidCell(cell: number): boolean {
@@ -432,12 +538,99 @@ class GameController {
     this.winner = curTurn;
     this.phase = "finished";
     this.pendingPiece = null;
+    this.isPauseAI = false;
+    this.stepAI = null;
+    this.nxtPieceAI = null;
+    this.isReview = true;
     this.updateUI();
+  }
+
+  private captureGameState(): GameState {
+    return {
+      activeTurn: this.activeTurn,
+      nxtPieceAI: this.nxtPieceAI,
+      stepAI: this.stepAI,
+      board: [...this.board],
+      pendingPiece: this.pendingPiece,
+      phase: this.phase,
+      remaining: [...this.remaining],
+      turnId: this.turnId,
+      winner: this.winner,
+    };
+  }
+
+  private saveGameState(curPlayer: Turn, turnId: number, eventType: HistEventType): void {
+    if (this.histIdx < this.histEvents.length) {
+      this.histEvents.splice(this.histIdx);
+      this.histStates.splice(this.histIdx + 1);
+    }
+
+    this.histEvents.push({ curPlayer, eventType, turnId });
+    this.histStates.push(this.captureGameState());
+    this.histIdx = this.histEvents.length;
+    this.updateHistControl();
+  }
+
+  private restoreHistory(target: number): void {
+    const snapshot: GameState | undefined = this.histStates[target];
+    if (snapshot === undefined) return;
+
+    this.requestId += 1;
+    this.timerClearAI(true);
+    this.workerTerminate();
+    this.activeReqAI = null;
+    this.deferMoveAI = null;
+    this.pendRecoverAI = false;
+
+    this.board = [...snapshot.board];
+    this.remaining = [...snapshot.remaining];
+    this.pendingPiece = snapshot.pendingPiece;
+    this.phase = snapshot.phase;
+    this.activeTurn = snapshot.activeTurn;
+    this.winner = snapshot.winner;
+    this.turnId = snapshot.turnId;
+    this.stepAI = snapshot.stepAI;
+    this.nxtPieceAI = snapshot.nxtPieceAI;
+    this.histIdx = target;
+
+    const isAIState: boolean =
+      !this.isReview && this.phase === "thinking" && this.getTurnPlayer(this.activeTurn) === "ai";
+    this.isPauseAI = isAIState;
+    this.updateUI();
+
+    if (isAIState) {
+      const delayMS: number =
+        this.stepAI === "select-open" ? 400 : this.stepAI === "select" ? 520 : 650;
+      this.turnScheduleAI(delayMS);
+    }
+  }
+
+  private isHistNav(): boolean {
+    return (
+      this.isReview ||
+      this.phase !== "thinking" ||
+      this.getTurnPlayer(this.activeTurn) !== "ai" ||
+      this.isPauseAI
+    );
+  }
+
+  private updateHistControl(): void {
+    const canNavigate: boolean = this.isHistNav();
+    this.elements.undo.disabled = !canNavigate || this.histIdx <= 0;
+    this.elements.redo.disabled = !canNavigate || this.histIdx >= this.histEvents.length;
+
+    const undoLbl: string = translate("controls.undo");
+    this.elements.undo.setAttribute("aria-label", undoLbl);
+    this.elements.undo.title = undoLbl;
+
+    const redoLbl: string = translate("controls.redo");
+    this.elements.redo.setAttribute("aria-label", redoLbl);
+    this.elements.redo.title = redoLbl;
   }
 
   private updateUI(): void {
     this.syncScene();
-    this.elements.thinking.hidden = this.phase !== "thinking";
+    this.elements.thinking.hidden = this.isReview || this.phase !== "thinking";
     this.elements.thinking.classList.toggle("is-paused", this.isPauseAI);
     this.elements.thinkingLabel.textContent = translate(
       this.isPauseAI ? "status.thinkingAIPaused" : "status.thinkingAI",
@@ -449,6 +642,7 @@ class GameController {
     this.elements.pauseToggleAI.setAttribute("aria-label", pauseControlLabel);
     this.elements.pauseToggleAI.setAttribute("aria-pressed", String(this.isPauseAI));
     this.elements.pauseToggleAI.title = pauseControlLabel;
+    this.updateHistControl();
 
     if (this.phase === "finished") {
       if (this.winner === "draw") {
@@ -656,7 +850,7 @@ class GameController {
 
   private timerResumeAI(): void {
     const timer: TimerAI | null = this.timerAI;
-    if (timer === null || timer.id !== null || this.isPauseAI) return;
+    if (timer === null || timer.id !== null || this.isPauseAI || this.isReview) return;
     timer.startedAt = performance.now();
     timer.id = window.setTimeout((): void => {
       if (this.timerAI !== timer) return;

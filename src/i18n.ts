@@ -11,7 +11,7 @@ interface TranslationTree {
   [key: string]: string | TranslationTree;
 }
 
-const NOT_TRANSLATABLE = {
+const NOT_TRANS = {
   game: "Uni-Git-Projects/UU-Game",
 };
 
@@ -51,7 +51,7 @@ function applyLang(): void {
   document.documentElement.dir = "ltr";
   for (const element of document.querySelectorAll<HTMLElement>("[data-i18n]")) {
     const key: string | undefined = element.dataset.i18n;
-    if (key !== undefined) element.textContent = translate(key, NOT_TRANSLATABLE);
+    if (key !== undefined) element.textContent = translate(key, NOT_TRANS);
   }
 }
 

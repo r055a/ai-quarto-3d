@@ -190,6 +190,15 @@ button {
     background: linear-gradient(135deg, #f1c47d, #d99643);
     box-shadow: 0 8px 24px rgba(213, 145, 62, 0.18);
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+
+    &:hover {
+      transform: none;
+    }
+  }
 }
 
 .game-card {
@@ -564,6 +573,43 @@ footer {
   }
 }
 
+.hist-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.hist-button {
+  display: grid;
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 0;
+  place-items: center;
+  border-color: rgba(233, 185, 110, 0.28);
+  color: var(--gold);
+  background: rgba(11, 14, 20, 0.82);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
+
+  &:not(:disabled):hover {
+    background: rgba(233, 185, 110, 0.16);
+  }
+
+  svg {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
 @media (max-width: $tablet-breakpoint) {
   #app {
     width: min(100% - 18px, 820px);
@@ -633,6 +679,17 @@ footer {
 
   .side-panel {
     padding: 22px;
+  }
+
+  .hist-controls {
+    top: 14px;
+    right: 14px;
+  }
+
+  .hist-button {
+    width: 38px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
   footer {
