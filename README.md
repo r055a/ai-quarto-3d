@@ -1,6 +1,8 @@
 # AI-Quarto 3D
 
-AI-Quarto in 3D using negamax with alpha-beta pruning and three.js UI. [Play game here](https://r055a.github.io/ai-quarto-3d/). Not affiliated with Gigamic.
+AI-Quarto in 3D using negamax with alpha-beta pruning and three.js UI. Not affiliated with Gigamic.
+
+Current UI design is focused on Desktop use. Experience may differ between devices. [Play game here](https://r055a.github.io/ai-quarto-3d/).
 
 A ported enhancement of past Uppsala University project: [uni-git-projects/uu-game](https://github.com/Uni-Git-Projects) (below); applying skills from more   
 studies completed with distinction, including (full-stack, UI) web dev, software eng, HCI, CG, AI/ML, and data eng, etc.
